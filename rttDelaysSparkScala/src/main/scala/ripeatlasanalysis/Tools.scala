@@ -10,7 +10,7 @@ import classes._
 import net.liftweb.json.DefaultFormats
 import net.liftweb.json._
 import net.liftweb.json.Serialization.write
- import org.apache.spark.mllib.rdd.RDDFunctions
+import org.apache.spark.mllib.rdd.RDDFunctions
 object Tools {
 
   /**
@@ -115,7 +115,7 @@ object Tools {
     val tracerouteMedianByHop = cleanedTraceroutes.map(t => computeMedianRTTByhop(t))
 
     //Find links in a traceroute
-   
+
     val tracerouteLinks = tracerouteMedianByHop.map(t => findLinksByTraceroute(spark, t))
 
     //Create a set of DetailedLink objects for every traceroute
@@ -401,19 +401,20 @@ object Tools {
       //Sort the distribution
       val newDist = dist.sorted
 
+        println("newDist "+newDist.toString())
       //Get the reference
       val tmpReference = reference
 
       // Case : 1
       if (tmpReference.valueMedian.size < 3) {
+
         val newReferenceValueMedian = tmpReference.valueMedian :+ current.valueMedian.last
         val newReferenceValueHi = tmpReference.valueHi :+ newDist(javatools.JavaTools.getIntegerPart(wilsonCi(1)))
         val newReferenceValueLow = tmpReference.valueLow :+ newDist(javatools.JavaTools.getIntegerPart(wilsonCi(0)))
-        
+
         reference.valueHi = newReferenceValueHi
         reference.valueLow = newReferenceValueLow
         reference.valueMedian = newReferenceValueMedian
-
       } //Case : 2
       else if (reference.valueMedian.size == 3) {
 
@@ -431,6 +432,7 @@ object Tools {
         reference.valueHi = newReferenceValueHi
         val newReferenceValueLow = reference.valueLow.map(f => reference.valueLow.last)
         reference.valueLow = newReferenceValueLow
+
       } //Case : 3
       else {
 
@@ -440,7 +442,7 @@ object Tools {
         reference.valueHi = newReferenceValueHi2
         reference.valueLow = newReferenceValueLow2
         reference.valueMedian = newReferenceValueMedian2
-        
+
         //Anomalies dection : compare the current with the reference
         if ((BigDecimal(current.valueMedian.last) - BigDecimal(current.valueLow.last) > reference.valueHi.last || current.valueMedian.last + current.valueHi.last < reference.valueLow.last) && scala.math.abs(current.valueMedian.last - reference.valueMedian.last) > 1) {
 
@@ -450,13 +452,13 @@ object Tools {
           val updateAlarmsValues = alarmsValues.medians :+ current.valueMedian.last
           alarmsValues.medians = updateAlarmsValues
         }
+
       }
       println("After reference " + reference.toString())
     }
-    
+
   }
-  
-  
+
   def scoreWilsonScoreCalculator(spark: SparkSession, distSize: Int): Seq[Double] = {
     val sqlContext = spark.sqlContext
     val score = new org.apache.commons.math3.stat.interval.WilsonScoreInterval().createInterval(distSize, distSize / 2, 0.95)
@@ -478,6 +480,9 @@ object Tools {
 
     current.valueHi = newValueHi
     current.valueLow = newValueLow
+
+    println("newDist(javatools.JavaTools.getIntegerPart(wilsonCi(0)))) est " + newDist(javatools.JavaTools.getIntegerPart(wilsonCi(0))))
+    println("newDist(javatools.JavaTools.getIntegerPart(wilsonCi(1)))) est " + newDist(javatools.JavaTools.getIntegerPart(wilsonCi(1))))
 
   }
 
